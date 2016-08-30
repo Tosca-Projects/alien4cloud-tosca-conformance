@@ -1,0 +1,14 @@
+Feature: ${name}
+#foreach($scenario in $scenarios)
+
+  Scenario: I parse $scenario.target
+    Given I parse the archive at "$scenario.file"
+#if($scenario.hasErrors())
+    Then the parsing failed
+#foreach($error in $scenario.errors)
+    And there is an error with code "$error.code" at line $error.line
+#end## foreach error
+#else
+    Then the parsing is a success
+#end
+#end## foreach scenario

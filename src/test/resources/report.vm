@@ -1,0 +1,40 @@
+---
+layout: post
+title:  TOSCA compatibility report
+root: ../../
+categories: DOCUMENTATION-1.3.0
+parent: [devops]
+node_name: toscareport
+weight: 900
+---
+
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th style="text-align: left">Feature</th>
+      <th style="text-align: left">Scenario</th>
+      <th style="text-align: left">Status</th>
+      <th style="text-align: left">Warning</th>
+      <th style="text-align: left">Info</th>
+    </tr>
+  </thead>
+  <tbody>
+#foreach($feature in $features)
+    #if($feature.status == "passed")<tr class="success">#elseif($feature.status == "passed with limitation(s)")<tr class="warning">#else<tr class="danger">
+#end
+#set( $rowspan = $feature.scenarios.size() + 1 )
+      <td style="text-align: left" rowspan="$rowspan">$feature.name</td>
+      <td style="text-align: left" colspan="4">$feature.status</td>
+    </tr>
+#foreach($scenario in $feature.scenarios)
+    #if($scenario.status == "passed")<tr class="success">#elseif($scenario.status == "passed with limitation(s)")<tr class="warning">#else<tr class="danger">
+#end
+      <td style="text-align: left">$scenario.name</td>
+      <td style="text-align: left">$scenario.status</td>
+      <td style="text-align: left"><ul>#foreach($error in $scenario.warningErrors)<li>$error.errorCode, $error.problem, $error.context, $error.note, at line $error.startMark.line</li>#end</ul></td>
+      <td style="text-align: left"><ul>#foreach($error in $scenario.infoErrors)<li>$error.errorCode, $error.problem, $error.context, $error.note, at line $error.startMark.line</li>#end</ul></td>
+    </tr>
+#end
+#end
+  </tbody>
+</table>
