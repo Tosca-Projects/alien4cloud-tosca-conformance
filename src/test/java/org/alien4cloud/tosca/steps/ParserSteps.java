@@ -1,33 +1,32 @@
 package org.alien4cloud.tosca.steps;
 
+import static alien4cloud.utils.AlienUtils.array;
+import static alien4cloud.utils.AlienUtils.safe;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import alien4cloud.tosca.parser.impl.ErrorCode;
-import alien4cloud.utils.MapUtil;
+import org.alien4cloud.validation.ToscaValidationGenerator;
+import org.junit.Assert;
+import org.tosca.ToscaContextConfiguration;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import cucumber.api.Scenario;
-import cucumber.api.java.After;
-import lombok.extern.slf4j.Slf4j;
-import org.alien4cloud.validation.ToscaValidationGenerator;
-import org.apache.commons.collections.MapUtils;
-import org.junit.Assert;
 
-import org.tosca.ToscaContextConfiguration;
 import alien4cloud.tosca.model.ArchiveRoot;
 import alien4cloud.tosca.parser.*;
+import alien4cloud.tosca.parser.impl.ErrorCode;
+import alien4cloud.utils.MapUtil;
 import cucumber.api.PendingException;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Cucumber steps implementation for parsing.
@@ -39,15 +38,26 @@ public class ParserSteps {
 
     private ParsingResult<ArchiveRoot> parsingResult;
 
-    /** Map the error code from the Tosca Validation scenarios to Alien4Cloud error codes. */
+    /**
+     * Map the error code from the Tosca Validation scenarios to Alien4Cloud error codes.
+     */
     private static Map<ToscaValidationErrorCode, ErrorCode> ERROR_CODE_MAP;
-    /** Optional mapping of TOSCA error codes to a detailed problem message. */
+    /**
+     * Optional mapping of TOSCA error codes to a detailed problem message.
+     */
     private static Map<ToscaValidationErrorCode, String> ERROR_PROBLEM_MAP;
+    /**
+     * Error code mapping for a specific test
+     */
+    private static Map<String, Map<ToscaValidationErrorCode, ErrorCode>> SPECIFIC_ERROR_CODE_MAP;
+
     // Set of error codes that are considered as warning in alien and error in TOSCA.
     private static Set<ErrorCode> NON_STRICT_ERRORS;
+
     static {
         ERROR_CODE_MAP = Maps.newHashMap();
         ERROR_PROBLEM_MAP = Maps.newHashMap();
+        SPECIFIC_ERROR_CODE_MAP = Maps.newHashMap();
         NON_STRICT_ERRORS = Sets.newHashSet();
 
         ERROR_CODE_MAP.put(ToscaValidationErrorCode.InvalidTOSCAVersion, ErrorCode.UNKNOWN_TOSCA_VERSION);
@@ -60,14 +70,18 @@ public class ParserSteps {
         ERROR_PROBLEM_MAP.put(ToscaValidationErrorCode.UnknownDslDefinition, "found undefined alias unknown_dsl_definition");
         ERROR_CODE_MAP.put(ToscaValidationErrorCode.InvalidParentType, ErrorCode.TYPE_NOT_FOUND);
         ERROR_CODE_MAP.put(ToscaValidationErrorCode.UnknownDataType, ErrorCode.TYPE_NOT_FOUND);
+        ERROR_CODE_MAP.put(ToscaValidationErrorCode.InvalidNativeTypeExtend, ErrorCode.SYNTAX_ERROR);
+        ERROR_PROBLEM_MAP.put(ToscaValidationErrorCode.UnknownDslDefinition, "The defined type inherit from a primitive type but defines some properties.");
 
+        SPECIFIC_ERROR_CODE_MAP.put("3.9.3.5-metadata-04-version_metadata_type.yml",
+                MapUtil.newHashMap(array(ToscaValidationErrorCode.ValueTypeMismatch), array(ErrorCode.SYNTAX_ERROR)));
     }
 
     @Given("^I parse the archive at \"(.*?)\"$")
     public void i_parse_the_archive_at(String location) throws Throwable {
         Path archivePath = ToscaValidationGenerator.SCENARIO_DIRECTORY.resolve(location);
 
-        ToscaParser toscaParser = ToscaContextConfiguration.getParser();
+        ToscaParser toscaParser = ToscaContextConfiguration.getParser("target/repository");
         try {
             parsingResult = toscaParser.parseFile(archivePath);
         } catch (ParsingException e) {
@@ -122,7 +136,10 @@ public class ParserSteps {
     public void there_is_an_error_with_code_at_line(String codeAsString, int line) throws Throwable {
         try {
             ToscaValidationErrorCode toscaErrorCode = ToscaValidationErrorCode.valueOf(codeAsString);
-            ErrorCode alienErrorCode = ERROR_CODE_MAP.get(toscaErrorCode);
+            ErrorCode alienErrorCode = safe(SPECIFIC_ERROR_CODE_MAP.get(parsingResult.getContext().getFileName())).get(toscaErrorCode);
+            if (alienErrorCode == null) {
+                alienErrorCode = ERROR_CODE_MAP.get(toscaErrorCode);
+            }
             assertNotNull("ErrorCode not mapped to alien error code", alienErrorCode);
             String errorProblem = ERROR_PROBLEM_MAP.get(toscaErrorCode);
 

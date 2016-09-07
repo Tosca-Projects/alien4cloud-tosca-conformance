@@ -17,5 +17,5 @@ import lombok.Setter;
 public class FeatureReport {
     private String name;
     private String status;
-    private Set<ScenarioReport> scenarios = Sets.newHashSet();
+    private Set<ScenarioReport> scenarios = Sets.newLinkedHashSet();
 }

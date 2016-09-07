@@ -1,12 +1,8 @@
 package org.alien4cloud.validation;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 import java.util.List;
-import java.util.Map;
+
+import lombok.*;
 
 /**
  * Represents a scenario.
@@ -15,7 +11,8 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class TestAssertion {
+@EqualsAndHashCode
+public class TestAssertion implements Comparable<TestAssertion> {
     private String file;
     private String id;
     private String description;
@@ -28,5 +25,10 @@ public class TestAssertion {
 
     public boolean hasErrors() {
         return errors != null && errors.size() > 0;
+    }
+
+    @Override
+    public int compareTo(TestAssertion o) {
+        return id.compareTo(o.getId());
     }
 }

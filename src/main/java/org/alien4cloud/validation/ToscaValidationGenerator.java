@@ -4,10 +4,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -30,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class ToscaValidationGenerator {
+    private final static Path TOSCA_LOCAL_REPO_DIR = Paths.get("target/repository/");
     private final static Path GIT_DIR = Paths.get("target/git/");
     private final static Path FEATURES_DIR = Paths.get("target/features");
     public static Path SCENARIO_DIRECTORY = GIT_DIR.resolve("tosca-test-assertions").resolve("Parser-Validator");
@@ -46,10 +44,15 @@ public class ToscaValidationGenerator {
         generator.checkoutAndIterate();
     }
 
-    private void checkoutAndIterate() throws IOException {
+    public Map<String, List<TestAssertion>> checkoutAndIterate() throws IOException {
         // use git to clone repository
-        repositoryManager.cloneOrCheckout(GIT_DIR, "https://github.com/oasis-open/tosca-test-assertions.git", "master", "tosca-test-assertions");
+        repositoryManager.cloneOrCheckout(GIT_DIR, "https://github.com/lucboutier/tosca-test-assertions.git", "master", "tosca-test-assertions");
         repositoryManager.cloneOrCheckout(GIT_DIR, "https://github.com/alien4cloud/alien4cloud.github.io.git", "sources", "alien4cloud.github.io");
+
+        // Prepare the local TOSCA repository to include the normative types
+        Files.createDirectories(TOSCA_LOCAL_REPO_DIR.resolve("tosca-normative-types").resolve("1.0.0"));
+        FileUtil.zip(GIT_DIR.resolve("tosca-test-assertions").resolve("Normative-types").resolve("normative-types.yml"),
+                TOSCA_LOCAL_REPO_DIR.resolve("tosca-normative-types").resolve("1.0.0").resolve("tosca-normative-types-1.0.0.csar"));
 
         // iterate over scenarios
         FileUtil.delete(FEATURES_DIR);
@@ -57,7 +60,7 @@ public class ToscaValidationGenerator {
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(SCENARIO_DIRECTORY)) {
             Iterator<Path> iter = stream.iterator();
-            Map<String, List<TestAssertion>> assertionMap = Maps.newHashMap();
+            Map<String, List<TestAssertion>> assertionMap = Maps.newLinkedHashMap();
             while (iter.hasNext()) {
                 Path path = iter.next();
                 if (!path.getFileName().toString().contains("FIXME")) {
@@ -77,6 +80,7 @@ public class ToscaValidationGenerator {
                 velocityCtx.put("scenarios", featureEntry.getValue());
                 VelocityUtil.generate("feature.vm", new FileWriter(featurePath.toFile()), velocityCtx);
             }
+            return assertionMap;
         }
     }
 

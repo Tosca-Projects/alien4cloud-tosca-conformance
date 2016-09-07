@@ -1,7 +1,7 @@
 Feature: ${name}
 #foreach($scenario in $scenarios)
 
-  Scenario: I parse $scenario.target
+  Scenario: $scenario.id: I parse $scenario.target
     Given I parse the archive at "$scenario.file"
 #if($scenario.hasErrors())
     Then the parsing failed

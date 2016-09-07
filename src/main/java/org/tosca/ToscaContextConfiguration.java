@@ -4,6 +4,7 @@ import org.springframework.context.annotation.*;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import alien4cloud.tosca.parser.ToscaParser;
+import alien4cloud.tosca.repository.LocalRepositoryImpl;
 
 /**
  * Context configuration for TOSCA Parser.
@@ -26,8 +27,19 @@ public class ToscaContextConfiguration {
      * @return The instance of the ToscaParser
      */
     public static ToscaParser getParser() {
+        return getParser(null);
+    }
+
+    /**
+     * Get the parser and set the path of the archive local repository
+     * 
+     * @param localRepositoryPath The path of the local repository if not already initialized.
+     * @return The path of the local repository.
+     */
+    public static ToscaParser getParser(String localRepositoryPath) {
         if (applicationContext == null) {
             initContext();
+            applicationContext.getBean(LocalRepositoryImpl.class).setPath(localRepositoryPath);
         }
         return applicationContext.getBean(ToscaParser.class);
     }
