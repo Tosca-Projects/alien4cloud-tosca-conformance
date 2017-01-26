@@ -4,7 +4,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -42,19 +45,24 @@ public class ToscaValidationGenerator {
     public static void main(String[] args) throws IOException {
         ToscaValidationGenerator generator = new ToscaValidationGenerator();
         generator.checkoutAndIterate();
+        log.info("Done.");
     }
 
     public Map<String, List<TestAssertion>> checkoutAndIterate() throws IOException {
         // use git to clone repository
+        log.info("Cloning tosca-test-assertions repository");
         repositoryManager.cloneOrCheckout(GIT_DIR, "https://github.com/lucboutier/tosca-test-assertions.git", "master", "tosca-test-assertions");
+        // This is for documentation update only and is not stable yet
         repositoryManager.cloneOrCheckout(GIT_DIR, "https://github.com/alien4cloud/alien4cloud.github.io.git", "sources", "alien4cloud.github.io");
 
+        log.info("Adding normative types to a local repository.");
         // Prepare the local TOSCA repository to include the normative types
         Files.createDirectories(TOSCA_LOCAL_REPO_DIR.resolve("tosca-normative-types").resolve("1.0.0"));
         FileUtil.zip(GIT_DIR.resolve("tosca-test-assertions").resolve("Normative-types").resolve("normative-types.yml"),
                 TOSCA_LOCAL_REPO_DIR.resolve("tosca-normative-types").resolve("1.0.0").resolve("tosca-normative-types-1.0.0.csar"));
 
         // iterate over scenarios
+        log.info("Creating cucumber scenarios.");
         FileUtil.delete(FEATURES_DIR);
         Files.createDirectories(FEATURES_DIR); // ensure directory is created
 
@@ -89,6 +97,7 @@ public class ToscaValidationGenerator {
             log.error("Directory generation is not currently supported, skipping {}", scenarioPath.getFileName());
             return null;
         } else {
+            log.info("Scenario generation from test template." + scenarioPath.toString());
             Yaml yaml = new IgnoreYaml();
 
             Map<String, Object> map = (Map<String, Object>) yaml.load(new FileInputStream(scenarioPath.toFile()));
@@ -101,8 +110,9 @@ public class ToscaValidationGenerator {
             target = target.replaceAll("\\)", "]");
             target = target.replaceAll("\\.", ",");
             TestAssertion assertion = new TestAssertion(SCENARIO_DIRECTORY.relativize(scenarioPath).toString(), metadata.get("oasis.testAssertion.id"),
-                    metadata.get("oasis.testAssertion.description"), target, metadata.get("oasis.testAssertion.predicate"),
-                    metadata.get("oasis.testAssertion.prescription_level"), metadata.get("oasis.testAssertion.tags.conformancetarget"),
+                    metadata.get("oasis.testAssertion.description"), metadata.get("oasis.testAssertion.prerequisite"), target,
+                    metadata.get("oasis.testAssertion.predicate"), metadata.get("oasis.testAssertion.prescription_level"),
+                    metadata.get("oasis.testAssertion.tags.conformancetarget"),
                     new NormativeSource(metadata.get("oasis.testAssertion.normativeSource.refSourceItem.documentId"),
                             metadata.get("oasis.testAssertion.normativeSource.refSourceItem.versionId"),
                             metadata.get("oasis.testAssertion.normativeSource.textSourceItem.section")),

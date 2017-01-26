@@ -16,6 +16,7 @@ public class TestAssertion implements Comparable<TestAssertion> {
     private String file;
     private String id;
     private String description;
+    private String prerequisite;
     private String target;
     private String predicate;
     private String prescription_level;

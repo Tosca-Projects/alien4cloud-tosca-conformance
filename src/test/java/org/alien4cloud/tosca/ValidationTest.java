@@ -11,7 +11,7 @@ import cucumber.api.junit.Cucumber;
 @RunWith(Cucumber.class)
 @CucumberOptions(features = {
         //
-        // "target/features/"
+        "target/features/"
         // "target/features/3.1.2-tosca_definitions_version.feature"
         // "target/features/3.5.1-description.feature"
         // "target/features/3.5.5-repositories.feature"
@@ -21,7 +21,7 @@ import cucumber.api.junit.Cucumber;
         // "target/features/3.9.3.3-metadata.feature"
         // "target/features/3.9.3.4-metadata.feature"
         // "target/features/3.9.3.5-metadata.feature"
-        "target/features/3.9.3.7-dsl_definitions.feature"
+        // "target/features/3.9.3.7-dsl_definitions.feature"
         //
 }, plugin = "org.alien4cloud.tosca.report.ToscaReporter", format = { "pretty", "html:target/cucumber/properties",
         "json:target/cucumber/cucumber-properties.json" })
